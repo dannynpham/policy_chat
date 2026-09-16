@@ -1,4 +1,4 @@
-PolicyChat
+# PolicyChat
 
 PolicyChat is a small retrieval-augmented generation demo. Upload multiple insurance policy PDFs and ask questions answered from all uploaded policies, such as a home policy and a trading-card policy together.
 
@@ -36,7 +36,7 @@ The key is read only in server code. Never put a real key in `.env.example` or c
 
 ## How the RAG flow works
 
-1. `POST /api/documents` accepts one PDF up to 10 MB per upload and rejects other file types.
+1. `POST /api/documents` accepts one PDF up to 4 MB per upload and rejects other file types. The limit keeps multipart requests within Vercel Function limits.
 2. The server uploads the file through the OpenAI Files API, creates a temporary Vector Store, and attaches the file with `vectorStores.files.createAndPoll`.
 3. The indexed document is classified through the Responses API. Non-policy documents are deleted and rejected before they are returned to the browser.
 4. The API waits for classification and indexing to complete before returning the Vector Store ID and file metadata.
@@ -77,3 +77,11 @@ A future version could store documents, chunks, embeddings, and user/session own
 - `lib/validation.ts`: API input validation
 - `lib/citations.ts`: extraction of returned file citations
 - `tests/`: focused validation and citation tests
+
+## Deploy to Vercel
+
+1. Import this repository into Vercel and keep the framework preset as **Next.js**.
+2. Add `OPENAI_API_KEY` as an environment variable for Production, Preview, and Development as needed.
+3. Deploy. Vercel detects the Next.js build and serves the API routes as Node.js Functions.
+
+The API routes declare a 60-second maximum duration for OpenAI retrieval and document indexing. Vercel plan limits still apply.

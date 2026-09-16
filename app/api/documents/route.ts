@@ -7,6 +7,8 @@ import {
 } from "@/lib/server/document-processing";
 import { validatePdf } from "@/lib/validation";
 
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   try {
     const openai = getOpenAI();

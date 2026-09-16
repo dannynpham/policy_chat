@@ -7,6 +7,8 @@ import { validateQuestion } from "@/lib/validation";
 const INSTRUCTIONS =
   "You answer questions using only the retrieved content from the uploaded policies. Do not rely on general insurance knowledge. If the policies do not provide enough evidence, say that you could not find the answer in the uploaded documents. Keep answers concise and include the available source citations.";
 
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   try {
     const validated = validateQuestion(await request.json().catch(() => null));

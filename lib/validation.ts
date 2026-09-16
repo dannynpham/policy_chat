@@ -1,4 +1,4 @@
-export const MAX_FILE_SIZE = 10 * 1024 * 1024;
+export const MAX_FILE_SIZE = 4 * 1024 * 1024;
 
 export function validatePdf(file: FormDataEntryValue | null): string | null {
   if (!(file instanceof File)) return "Please upload a PDF file.";
@@ -7,7 +7,7 @@ export function validatePdf(file: FormDataEntryValue | null): string | null {
     !file.name.toLowerCase().endsWith(".pdf")
   )
     return "Only PDF files are supported.";
-  if (file.size > MAX_FILE_SIZE) return "The PDF must be 10 MB or smaller.";
+  if (file.size > MAX_FILE_SIZE) return "The PDF must be 4 MB or smaller.";
   if (file.size === 0) return "The PDF cannot be empty.";
   return null;
 }
