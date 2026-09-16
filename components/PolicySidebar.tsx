@@ -8,16 +8,18 @@ import {
   Divider,
   FileButton,
   Group,
-  Loader,
   Paper,
   Stack,
   Text,
   UnstyledButton,
 } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import { IconDownload, IconFileUpload, IconTrash } from "@tabler/icons-react";
 import { DocumentStatus } from "@/hooks/usePolicyDocuments";
 import { downloadPolicy } from "@/lib/api/documents";
 import type { PolicyDocument } from "@/lib/documents";
+
+const DOCUMENT_OPERATION_NOTIFICATION_ID = "policychat-document-operation";
 
 const SUGGESTIONS = [
   "What is the deductible?",
@@ -63,6 +65,30 @@ export function PolicySidebar({
     if (downloadError) onNotify(downloadError);
   }, [downloadError, onNotify]);
 
+  useEffect(() => {
+    const messages: Record<DocumentStatus, string> = {
+      [DocumentStatus.IDLE]: "",
+      [DocumentStatus.UPLOADING]: "Checking and indexing policy...",
+      [DocumentStatus.DELETING]: "Removing policy...",
+      [DocumentStatus.CLEARING]: "Removing all policies...",
+    };
+    const message = messages[status];
+    if (message) {
+      notifications.show({
+        id: DOCUMENT_OPERATION_NOTIFICATION_ID,
+        message,
+        loading: true,
+        autoClose: false,
+        withCloseButton: false,
+      });
+    } else {
+      notifications.hide(DOCUMENT_OPERATION_NOTIFICATION_ID);
+    }
+    return () => {
+      notifications.hide(DOCUMENT_OPERATION_NOTIFICATION_ID);
+    };
+  }, [status]);
+
   async function handleDownload(policy: PolicyDocument) {
     setDownloadError("");
     setDownloadingFileId(policy.fileId);
@@ -107,30 +133,6 @@ export function PolicySidebar({
             PDF files up to 4 MB
           </Text>
         </Stack>
-        {status === DocumentStatus.UPLOADING && (
-          <Group mt="md" gap="xs">
-            <Loader size="sm" />
-            <Text size="sm" c="teal">
-              Checking and indexing policy...
-            </Text>
-          </Group>
-        )}
-        {status === DocumentStatus.DELETING && (
-          <Group mt="md" gap="xs">
-            <Loader size="sm" color="red" />
-            <Text size="sm" c="red">
-              Removing policy...
-            </Text>
-          </Group>
-        )}
-        {status === DocumentStatus.CLEARING && (
-          <Group mt="md" gap="xs">
-            <Loader size="sm" color="red" />
-            <Text size="sm" c="red">
-              Removing all policies...
-            </Text>
-          </Group>
-        )}
         {documents.length > 0 && (
           <>
             <Divider my="lg" />

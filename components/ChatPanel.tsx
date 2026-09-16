@@ -8,7 +8,6 @@ import {
   Button,
   Divider,
   Group,
-  Loader,
   Paper,
   ScrollArea,
   Stack,
@@ -16,6 +15,7 @@ import {
   TextInput,
   Title,
 } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import {
   IconAlertCircle,
   IconArrowRight,
@@ -24,6 +24,8 @@ import {
 } from "@tabler/icons-react";
 import { ChatStatus } from "@/hooks/usePolicyChat";
 import type { Message } from "@/lib/chat";
+
+const ANSWER_LOADING_NOTIFICATION_ID = "policychat-generating-answer";
 
 type ChatPanelProps = {
   messages: Message[];
@@ -65,13 +67,36 @@ export function ChatPanel({
     if (error) onNotify(error);
   }, [error, onNotify]);
 
+  useEffect(() => {
+    if (status === ChatStatus.ASKING) {
+      notifications.show({
+        id: ANSWER_LOADING_NOTIFICATION_ID,
+        message: "Generating answer...",
+        loading: true,
+        autoClose: false,
+        withCloseButton: false,
+      });
+    } else {
+      notifications.hide(ANSWER_LOADING_NOTIFICATION_ID);
+    }
+    return () => {
+      notifications.hide(ANSWER_LOADING_NOTIFICATION_ID);
+    };
+  }, [status]);
+
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     onSubmit();
   }
 
   return (
-    <Paper withBorder radius="md" p={{ base: "md", sm: "xl" }} shadow="sm" h="100%">
+    <Paper
+      withBorder
+      radius="md"
+      p={{ base: "md", sm: "xl" }}
+      shadow="sm"
+      style={{ height: "clamp(560px, calc(100dvh - 220px), 760px)" }}
+    >
       <Stack h="100%" gap="md">
         <Group justify="space-between" align="start">
           <Box>
@@ -79,12 +104,6 @@ export function ChatPanel({
               02 / Ask your policy
             </Text>
             <Title order={2} size="h2" mt={4}>Conversation</Title>
-            {status === ChatStatus.ASKING && (
-              <Group gap="xs" mt="xs" role="status" aria-live="polite">
-                <Loader size="xs" />
-                <Text size="xs" c="dimmed">Generating answer...</Text>
-              </Group>
-            )}
           </Box>
           <Button
             variant="subtle"
@@ -178,10 +197,11 @@ export function ChatPanel({
             />
             <Button
               type="submit"
+              w={112}
               disabled={!hasUploads || !question.trim() || status === ChatStatus.ASKING}
             >
               {status === ChatStatus.ASKING ? (
-                <Group gap="xs"><Loader size="xs" color="white" /> Thinking</Group>
+                "Thinking"
               ) : (
                 <Group gap="xs">Ask <IconArrowRight size={16} /></Group>
               )}
