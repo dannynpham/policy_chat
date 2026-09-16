@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+:root {
+	--ink: #17231f;
+	--muted: #687871;
+	--paper: #f3f6f1;
+	--panel: rgba(255, 255, 255, 0.78);
+	--line: #dce5de;
+	--green: #1f5b4d;
+	--green-dark: #17483d;
+	--mint: #dceee5;
+	--coral: #dd7658;
+}
+
+* { box-sizing: border-box; }
+body {
+	margin: 0;
+	color: var(--ink);
+	background:
+		radial-gradient(circle at 8% 0%, rgba(220, 238, 229, 0.72), transparent 30rem),
+		linear-gradient(135deg, #f8faf7 0%, var(--paper) 48%, #edf3ed 100%);
+	font-family: "Avenir Next", "Helvetica Neue", sans-serif;
+	-webkit-font-smoothing: antialiased;
+}
+h1, h2 { font-family: Georgia, "Times New Roman", serif; }
+button, input { font: inherit; }
