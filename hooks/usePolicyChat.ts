@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { askPolicy, createAssistantMessage } from "@/lib/api/chat";
-import type { Message } from "@/lib/chat";
+import type { ConversationMessage, Message } from "@/lib/chat";
 import type { PolicyDocument } from "@/lib/documents";
 
 export enum ChatStatus {
@@ -40,6 +40,10 @@ export function usePolicyChat() {
     requestControllerRef.current = controller;
     setQuestion("");
     setError("");
+    const conversation: ConversationMessage[] = [
+      ...messages.map(({ role, content }) => ({ role, content })),
+      { role: "user", content: trimmedQuestion },
+    ];
     setMessages((current) => [
       ...current,
       { role: "user", content: trimmedQuestion },
@@ -49,6 +53,7 @@ export function usePolicyChat() {
       const data = await askPolicy(
         documents.map((document) => document.id),
         trimmedQuestion,
+        conversation,
         controller.signal,
       );
       setMessages((current) => [

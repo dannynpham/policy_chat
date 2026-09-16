@@ -5,7 +5,7 @@ import { containsHumanReviewTerm, shouldEscalate } from "@/lib/escalation";
 import { validateQuestion } from "@/lib/validation";
 
 const INSTRUCTIONS =
-  "You answer questions using only the retrieved content from the uploaded policies. Do not rely on general insurance knowledge. If the policies do not provide enough evidence, say that you could not find the answer in the uploaded documents. Keep answers concise and include the available source citations.";
+  "You answer questions using only the retrieved content from the uploaded policies. Use the conversation history to understand follow-up questions, but treat it as context rather than evidence. Do not rely on general insurance knowledge or previous assistant answers when the policy documents disagree. If the policies do not provide enough evidence, say that you could not find the answer in the uploaded documents. Keep answers concise and include the available source citations.";
 
 export const maxDuration = 60;
 
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     const response = await openai.responses.create({
       model: "gpt-4.1-mini",
       instructions: INSTRUCTIONS,
-      input: validated.question,
+      input: validated.messages,
       tools: [
         { type: "file_search", vector_store_ids: validated.vectorStoreIds },
       ],

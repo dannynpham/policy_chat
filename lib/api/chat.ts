@@ -1,4 +1,4 @@
-import type { Message } from "@/lib/chat";
+import type { ConversationMessage, Message } from "@/lib/chat";
 import type { Citation } from "@/lib/citations";
 import type { PolicyDocument } from "@/lib/documents";
 
@@ -13,12 +13,13 @@ export type ChatResponse = {
 export async function askPolicy(
   vectorStoreIds: string[],
   question: string,
+  messages: ConversationMessage[],
   signal?: AbortSignal,
 ): Promise<ChatResponse> {
   const response = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ vectorStoreIds, question }),
+    body: JSON.stringify({ vectorStoreIds, question, messages }),
     signal,
   });
   const data = (await response.json()) as ChatResponse & { error?: string };

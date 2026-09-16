@@ -45,6 +45,7 @@ export function ChatPanel({
       questionInputRef.current?.focus();
   }, [messages.length, status]);
 
+
   return (
     <section className="flex min-h-140 flex-col rounded-lg border border-(--line) bg-(--panel) p-5 shadow-[0_16px_40px_rgba(31,91,77,0.08)] backdrop-blur-sm sm:p-8">
       <div className="mb-7 flex items-center justify-between border-b border-(--line) pb-5">

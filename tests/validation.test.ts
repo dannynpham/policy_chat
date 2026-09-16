@@ -13,11 +13,44 @@ describe("request validation", () => {
       validateQuestion({
         vectorStoreIds: ["vs_home", "vs_cards"],
         question: " deductible? ",
+        messages: [{ role: "user", content: " deductible? " }],
       }),
     ).toEqual({
       vectorStoreIds: ["vs_home", "vs_cards"],
       question: "deductible?",
+      messages: [{ role: "user", content: "deductible?" }],
     }));
+  it("accepts conversation history and uses its latest user message", () =>
+    expect(
+      validateQuestion({
+        vectorStoreIds: ["vs_home"],
+        question: "What about exceptions?",
+        messages: [
+          { role: "user", content: "What is the deductible?" },
+          { role: "assistant", content: "It is $500." },
+          { role: "user", content: "What about exceptions?" },
+        ],
+      }),
+    ).toEqual({
+      vectorStoreIds: ["vs_home"],
+      question: "What about exceptions?",
+      messages: [
+        { role: "user", content: "What is the deductible?" },
+        { role: "assistant", content: "It is $500." },
+        { role: "user", content: "What about exceptions?" },
+      ],
+    }));
+  it("rejects oversized conversation history", () =>
+    expect(
+      validateQuestion({
+        vectorStoreIds: ["vs_home"],
+        question: "Question",
+        messages: Array.from({ length: 11 }, () => ({
+          role: "user",
+          content: "Question",
+        })),
+      }),
+    ).toBe("Conversation history must contain 1-10 messages."));
   it("supports a distinct vector store per policy", () => {
     const policies: PolicyDocument[] = [
       { id: "vs_home", fileId: "file_home", name: "Home.pdf", size: 100 },
