@@ -1,10 +1,16 @@
 "use client";
 
-import { useEffect, useRef, type RefObject, type SubmitEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  type RefObject,
+  type SubmitEvent,
+} from "react";
 import clsx from "clsx";
 import type { Message } from "@/lib/chat";
 import { ChatStatus } from "@/hooks/usePolicyChat";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import type { Toast } from "@/components/ToastViewport";
 
 type ChatPanelProps = {
   messages: Message[];
@@ -17,6 +23,7 @@ type ChatPanelProps = {
   onSubmit: () => void;
   onNewConversation: () => void;
   onRequestLiveAgent: () => void;
+  onNotify: (message: string, kind?: Toast["kind"]) => void;
   hasUploads: boolean;
 };
 
@@ -31,6 +38,7 @@ export function ChatPanel({
   onSubmit,
   onNewConversation,
   onRequestLiveAgent,
+  onNotify,
   hasUploads,
 }: ChatPanelProps) {
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
@@ -44,6 +52,10 @@ export function ChatPanel({
     if (status === ChatStatus.IDLE && messages.length > 0)
       questionInputRef.current?.focus();
   }, [messages.length, status]);
+
+  useEffect(() => {
+    if (error) onNotify(error);
+  }, [error, onNotify]);
 
 
   return (
@@ -157,14 +169,6 @@ export function ChatPanel({
         ))}
         <div ref={chatEndRef} aria-hidden="true" />
       </div>
-      {error && (
-        <p
-          className="mb-4 border-l-2 border-(--coral) bg-[#fff4ef] p-3 text-sm text-[#9a432c]"
-          role="alert"
-        >
-          {error}
-        </p>
-      )}
       <form
         onSubmit={handleSubmit}
         className="mt-3 flex gap-3 rounded-lg border-2 border-(--green)/35 bg-white px-3 py-2 shadow-[0_5px_0_var(--mint)] transition focus-within:border-(--green) focus-within:shadow-[0_5px_0_var(--green)]"

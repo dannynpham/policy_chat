@@ -1,17 +1,32 @@
 "use client";
 
+import { useCallback, useState } from "react";
 import { ChatPanel } from "@/components/ChatPanel";
 import { PolicySidebar } from "@/components/PolicySidebar";
+import { ToastViewport, type Toast } from "@/components/ToastViewport";
 import { ChatStatus, usePolicyChat } from "@/hooks/usePolicyChat";
 import { usePolicyDocuments } from "@/hooks/usePolicyDocuments";
 
 export default function Home() {
+  const [toasts, setToasts] = useState<Toast[]>([]);
   const chat = usePolicyChat();
   const documents = usePolicyDocuments(chat.resetConversation);
   const hasUploads = documents.documents.length > 0;
+  const notify = useCallback((message: string, kind: Toast["kind"] = "error") => {
+    setToasts((current) => [
+      ...current.slice(-2),
+      { id: Date.now() + Math.random(), message, kind },
+    ]);
+  }, []);
 
   return (
     <main className="min-h-screen px-5 py-8 sm:px-10 lg:px-20 lg:py-12">
+      <ToastViewport
+        toasts={toasts}
+        onDismiss={(id) =>
+          setToasts((current) => current.filter((toast) => toast.id !== id))
+        }
+      />
       <div className="mx-auto max-w-6xl">
         <header className="mb-10 flex items-end justify-between gap-6 border-b border-(--line) pb-7">
           <div>
@@ -31,6 +46,7 @@ export default function Home() {
             onUpload={documents.uploadDocument}
             onRemove={documents.removeDocument}
             onReset={documents.resetSession}
+            onNotify={notify}
             hasQuestion={hasUploads && chat.status !== ChatStatus.ASKING}
             onSuggestion={chat.setQuestion}
           />
@@ -47,6 +63,7 @@ export default function Home() {
             }
             onNewConversation={chat.resetConversation}
             onRequestLiveAgent={chat.requestLiveAgent}
+            onNotify={notify}
             hasUploads={hasUploads}
           />
         </div>

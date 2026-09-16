@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, type SubmitEvent } from "react";
+import { useEffect, useState, type SubmitEvent } from "react";
 import clsx from "clsx";
 import { downloadPolicy } from "@/lib/api/documents";
 import type { PolicyDocument } from "@/lib/documents";
 import { DocumentStatus } from "@/hooks/usePolicyDocuments";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import type { Toast } from "@/components/ToastViewport";
 
 const SUGGESTIONS = [
   "What is the deductible?",
@@ -21,6 +22,7 @@ type PolicySidebarProps = {
   onUpload: (file: File) => void;
   onRemove: (document: PolicyDocument) => void;
   onReset: () => void;
+  onNotify: (message: string, kind?: Toast["kind"]) => void;
   hasQuestion: boolean;
   onSuggestion: (suggestion: string) => void;
 };
@@ -32,6 +34,7 @@ export function PolicySidebar({
   onUpload,
   onRemove,
   onReset,
+  onNotify,
   hasQuestion,
   onSuggestion,
 }: PolicySidebarProps) {
@@ -40,6 +43,14 @@ export function PolicySidebar({
     null,
   );
   const [downloadError, setDownloadError] = useState("");
+
+  useEffect(() => {
+    if (error) onNotify(error);
+  }, [error, onNotify]);
+
+  useEffect(() => {
+    if (downloadError) onNotify(downloadError);
+  }, [downloadError, onNotify]);
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -115,11 +126,6 @@ export function PolicySidebar({
           <p className="mt-4 flex items-center gap-2 text-sm text-(--coral)">
             <LoadingSpinner label="Removing all policies" />
             Removing all policies...
-          </p>
-        )}
-        {(error || downloadError) && (
-          <p className="mt-4 border-l-2 border-(--coral) bg-[#fff4ef] p-3 text-sm text-[#9a432c]">
-            {error || downloadError}
           </p>
         )}
         {documents.length > 0 && (
