@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createHash } from "node:crypto";
 import { toFile } from "openai/uploads";
 import { getOpenAI } from "@/lib/openai";
 import {
@@ -22,6 +23,9 @@ export async function POST(request: Request) {
         { error: "Please upload a PDF file." },
         { status: 400 },
       );
+    const contentHash = createHash("sha256")
+      .update(Buffer.from(await file.arrayBuffer()))
+      .digest("hex");
     const uploadedFile = await openai.files.create({
       file: await toFile(await file.arrayBuffer(), file.name, {
         type: "application/pdf",
@@ -54,7 +58,12 @@ export async function POST(request: Request) {
       }
       return NextResponse.json({
         vectorStoreId,
-        file: { id: uploadedFile.id, name: file.name, size: file.size },
+        file: {
+          id: uploadedFile.id,
+          name: file.name,
+          size: file.size,
+          contentHash,
+        },
       });
     } catch (error) {
       await deleteOpenAIResources(openai, {

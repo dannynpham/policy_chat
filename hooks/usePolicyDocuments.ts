@@ -2,7 +2,7 @@
 
 import { startTransition, useEffect, useState } from "react";
 import { deletePolicies, uploadPolicy } from "@/lib/api/documents";
-import type { PolicyDocument } from "@/lib/documents";
+import { hashFile, type PolicyDocument } from "@/lib/documents";
 
 const STORAGE_KEY = "policychat_documents";
 
@@ -35,6 +35,12 @@ export function usePolicyDocuments(onDocumentsChanged: () => void) {
     setError("");
     setStatus(DocumentStatus.UPLOADING);
     try {
+      const contentHash = await hashFile(file);
+      if (
+        documents.some((document) => document.contentHash === contentHash)
+      ) {
+        throw new Error("This policy PDF has already been uploaded.");
+      }
       const nextDocument = await uploadPolicy(file);
       setDocuments((current) => {
         const nextDocuments = [

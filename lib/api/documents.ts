@@ -2,7 +2,7 @@ import type { PolicyDocument } from "@/lib/documents";
 
 type UploadResponse = {
   vectorStoreId: string;
-  file: { id: string; name: string; size: number };
+  file: { id: string; name: string; size: number; contentHash: string };
 };
 
 async function readResponse(response: Response): Promise<UploadResponse> {
@@ -23,6 +23,7 @@ export async function uploadPolicy(file: File): Promise<PolicyDocument> {
     fileId: data.file.id,
     name: data.file.name,
     size: data.file.size,
+    contentHash: data.file.contentHash,
   };
 }
 
