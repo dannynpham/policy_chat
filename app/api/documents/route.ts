@@ -10,6 +10,40 @@ import { validatePdf } from "@/lib/validation";
 
 export const maxDuration = 60;
 
+function safeDownloadName(value: string | null): string {
+  const name = (value ?? "policy.pdf")
+    .replace(/[\r\n"\\/]/g, "_")
+    .trim();
+  if (!name) return "policy.pdf";
+  return name.toLowerCase().endsWith(".pdf") ? name : `${name}.pdf`;
+}
+
+export async function GET(request: Request) {
+  try {
+    const url = new URL(request.url);
+    const fileId = url.searchParams.get("fileId");
+    if (!fileId)
+      return NextResponse.json({ error: "A file ID is required." }, { status: 400 });
+    const openai = getOpenAI();
+    const file = await openai.files.content(fileId);
+    return new Response(await file.arrayBuffer(), {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="${safeDownloadName(url.searchParams.get("filename"))}"`,
+      },
+    });
+  } catch (error) {
+    console.error(
+      "Policy download failed:",
+      error instanceof Error ? error.message : "unknown error",
+    );
+    return NextResponse.json(
+      { error: "The policy could not be downloaded." },
+      { status: 404 },
+    );
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const openai = getOpenAI();

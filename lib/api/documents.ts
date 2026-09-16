@@ -27,6 +27,26 @@ export async function uploadPolicy(file: File): Promise<PolicyDocument> {
   };
 }
 
+export async function downloadPolicy(
+  policyDocument: PolicyDocument,
+): Promise<void> {
+  const params = new URLSearchParams({
+    fileId: policyDocument.fileId,
+    filename: policyDocument.name,
+  });
+  const response = await fetch(`/api/documents?${params.toString()}`);
+  if (!response.ok) {
+    const data = (await response.json()) as { error?: string };
+    throw new Error(data.error ?? "The policy could not be downloaded.");
+  }
+  const url = URL.createObjectURL(await response.blob());
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = policyDocument.name;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
 export async function deletePolicies(
   documents: PolicyDocument[],
 ): Promise<void> {

@@ -1,7 +1,8 @@
 "use client";
 
-import type { SubmitEvent } from "react";
+import { useState, type SubmitEvent } from "react";
 import clsx from "clsx";
+import { downloadPolicy } from "@/lib/api/documents";
 import type { PolicyDocument } from "@/lib/documents";
 import { DocumentStatus } from "@/hooks/usePolicyDocuments";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -35,6 +36,10 @@ export function PolicySidebar({
   onSuggestion,
 }: PolicySidebarProps) {
   const isBusy = status !== DocumentStatus.IDLE;
+  const [downloadingFileId, setDownloadingFileId] = useState<string | null>(
+    null,
+  );
+  const [downloadError, setDownloadError] = useState("");
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -44,6 +49,22 @@ export function PolicySidebar({
     const file = input.files?.[0];
     if (file) onUpload(file);
     event.currentTarget.reset();
+  }
+
+  async function handleDownload(document: PolicyDocument) {
+    setDownloadError("");
+    setDownloadingFileId(document.fileId);
+    try {
+      await downloadPolicy(document);
+    } catch (downloadError) {
+      setDownloadError(
+        downloadError instanceof Error
+          ? downloadError.message
+          : "The policy could not be downloaded.",
+      );
+    } finally {
+      setDownloadingFileId(null);
+    }
   }
 
   return (
@@ -96,24 +117,25 @@ export function PolicySidebar({
             Removing all policies...
           </p>
         )}
-        {error && (
+        {(error || downloadError) && (
           <p className="mt-4 border-l-2 border-(--coral) bg-[#fff4ef] p-3 text-sm text-[#9a432c]">
-            {error}
+            {error || downloadError}
           </p>
         )}
         {documents.length > 0 && (
           <div className="mt-5 border-t border-(--line) pt-4">
-            <div className="mb-3 flex items-center justify-between">
+            <div className="mb-3 flex items-center justify-between gap-2">
               <p className="text-xs uppercase tracking-wider text-(--muted)">
                 Included policies · {documents.length}
               </p>
               <button
+                type="button"
                 className={clsx(
                   "text-xs font-bold text-(--coral) underline",
                   "cursor-pointer disabled:cursor-not-allowed disabled:opacity-40",
                 )}
                 onClick={onReset}
-                disabled={isBusy}
+                disabled={isBusy || downloadingFileId !== null}
               >
                 Clear all
               </button>
@@ -131,13 +153,24 @@ export function PolicySidebar({
                     Indexed
                   </span>
                   <button
+                    type="button"
+                    aria-label={`Download ${document.name}`}
+                    title={`Download ${document.name}`}
+                    className="px-1 text-(--green) cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
+                    onClick={() => handleDownload(document)}
+                    disabled={isBusy || downloadingFileId !== null}
+                  >
+                    ↓
+                  </button>
+                  <button
+                    type="button"
                     aria-label={`Remove ${document.name}`}
                     className={clsx(
                       "px-1 text-(--coral)",
                       "cursor-pointer disabled:cursor-not-allowed disabled:opacity-40",
                     )}
                     onClick={() => onRemove(document)}
-                    disabled={isBusy}
+                    disabled={isBusy || downloadingFileId !== null}
                   >
                     ×
                   </button>
