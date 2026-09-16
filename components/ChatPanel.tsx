@@ -1,6 +1,6 @@
 "use client";
 
-import type { RefObject, SubmitEvent } from "react";
+import { useEffect, useRef, type RefObject, type SubmitEvent } from "react";
 import clsx from "clsx";
 import type { Message } from "@/lib/chat";
 import { ChatStatus } from "@/hooks/usePolicyChat";
@@ -38,6 +38,13 @@ export function ChatPanel({
     onSubmit();
   }
 
+  const questionInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (status === ChatStatus.IDLE && messages.length > 0)
+      questionInputRef.current?.focus();
+  }, [messages.length, status]);
+
   return (
     <section className="flex min-h-140 flex-col rounded-lg border border-(--line) bg-(--panel) p-5 shadow-[0_16px_40px_rgba(31,91,77,0.08)] backdrop-blur-sm sm:p-8">
       <div className="mb-7 flex items-center justify-between border-b border-(--line) pb-5">
@@ -47,7 +54,11 @@ export function ChatPanel({
           </p>
           <h2 className="mt-1 text-2xl">Conversation</h2>
           {status === ChatStatus.ASKING && (
-            <p className="mt-2 flex items-center gap-2 text-xs text-(--muted)">
+            <p
+              className="mt-2 flex items-center gap-2 text-xs text-(--muted)"
+              role="status"
+              aria-live="polite"
+            >
               <LoadingSpinner label="Generating answer" />
               Generating answer...
             </p>
@@ -146,7 +157,10 @@ export function ChatPanel({
         <div ref={chatEndRef} aria-hidden="true" />
       </div>
       {error && (
-        <p className="mb-4 border-l-2 border-(--coral) bg-[#fff4ef] p-3 text-sm text-[#9a432c]">
+        <p
+          className="mb-4 border-l-2 border-(--coral) bg-[#fff4ef] p-3 text-sm text-[#9a432c]"
+          role="alert"
+        >
           {error}
         </p>
       )}
@@ -155,9 +169,11 @@ export function ChatPanel({
         className="mt-3 flex gap-3 rounded-lg border-2 border-(--green)/35 bg-white px-3 py-2 shadow-[0_5px_0_var(--mint)] transition focus-within:border-(--green) focus-within:shadow-[0_5px_0_var(--green)]"
       >
         <input
+          ref={questionInputRef}
           value={question}
           onChange={(event) => onQuestionChange(event.target.value)}
           disabled={!hasUploads || status === ChatStatus.ASKING}
+          aria-label="Ask a question about your policy"
           placeholder={
             hasUploads ? "Ask about your policy..." : "Upload a policy first"
           }
