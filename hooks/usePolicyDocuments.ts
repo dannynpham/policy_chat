@@ -41,7 +41,10 @@ export function usePolicyDocuments(onDocumentsChanged: () => void) {
       ) {
         throw new Error("This policy PDF has already been uploaded.");
       }
-      const nextDocument = await uploadPolicy(file);
+      const nextDocument = await uploadPolicy(
+        file,
+        documents.map((document) => document.fileId),
+      );
       setDocuments((current) => {
         const nextDocuments = [
           ...current.filter(

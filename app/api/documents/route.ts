@@ -18,6 +18,10 @@ function safeDownloadName(value: string | null): string {
   return name.toLowerCase().endsWith(".pdf") ? name : `${name}.pdf`;
 }
 
+function sha256(value: ArrayBuffer): string {
+  return createHash("sha256").update(Buffer.from(value)).digest("hex");
+}
+
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
@@ -57,11 +61,42 @@ export async function POST(request: Request) {
         { error: "Please upload a PDF file." },
         { status: 400 },
       );
-    const contentHash = createHash("sha256")
-      .update(Buffer.from(await file.arrayBuffer()))
-      .digest("hex");
+    const content = await file.arrayBuffer();
+    const contentHash = sha256(content);
+    const existingFileIdsValue = formData.get("existingFileIds");
+    let existingFileIds: string[] = [];
+    if (typeof existingFileIdsValue === "string") {
+      try {
+        const parsed = JSON.parse(existingFileIdsValue);
+        if (Array.isArray(parsed)) {
+          existingFileIds = parsed
+            .filter(
+              (id): id is string =>
+                typeof id === "string" && Boolean(id.trim()),
+            )
+            .slice(0, 20);
+        }
+      } catch {
+        existingFileIds = [];
+      }
+    }
+    for (const existingFileId of existingFileIds) {
+      try {
+        const existingFile = await openai.files.content(existingFileId);
+        if (sha256(await existingFile.arrayBuffer()) === contentHash)
+          return NextResponse.json(
+            { error: "This policy PDF has already been uploaded." },
+            { status: 409 },
+          );
+      } catch (error) {
+        console.warn(
+          `Could not compare existing policy file ${existingFileId}:`,
+          error instanceof Error ? error.message : "unknown error",
+        );
+      }
+    }
     const uploadedFile = await openai.files.create({
-      file: await toFile(await file.arrayBuffer(), file.name, {
+      file: await toFile(content, file.name, {
         type: "application/pdf",
       }),
       purpose: "assistants",

@@ -12,9 +12,13 @@ async function readResponse(response: Response): Promise<UploadResponse> {
   return data;
 }
 
-export async function uploadPolicy(file: File): Promise<PolicyDocument> {
+export async function uploadPolicy(
+  file: File,
+  existingFileIds: string[] = [],
+): Promise<PolicyDocument> {
   const formData = new FormData();
   formData.append("file", file);
+  formData.append("existingFileIds", JSON.stringify(existingFileIds));
   const data = await readResponse(
     await fetch("/api/documents", { method: "POST", body: formData }),
   );
