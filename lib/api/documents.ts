@@ -47,7 +47,9 @@ export async function downloadPolicy(
   const link = document.createElement("a");
   link.href = url;
   link.download = policyDocument.name;
+  document.body.appendChild(link);
   link.click();
+  link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
