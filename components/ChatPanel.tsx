@@ -1,16 +1,29 @@
 "use client";
 
+import { useEffect, useRef, type RefObject, type SubmitEvent } from "react";
 import {
-  useEffect,
-  useRef,
-  type RefObject,
-  type SubmitEvent,
-} from "react";
-import clsx from "clsx";
-import type { Message } from "@/lib/chat";
+  Alert,
+  Badge,
+  Box,
+  Button,
+  Divider,
+  Group,
+  Loader,
+  Paper,
+  ScrollArea,
+  Stack,
+  Text,
+  TextInput,
+  Title,
+} from "@mantine/core";
+import {
+  IconAlertCircle,
+  IconArrowRight,
+  IconRobot,
+  IconUser,
+} from "@tabler/icons-react";
 import { ChatStatus } from "@/hooks/usePolicyChat";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
-import type { Toast } from "@/components/ToastViewport";
+import type { Message } from "@/lib/chat";
 
 type ChatPanelProps = {
   messages: Message[];
@@ -23,7 +36,7 @@ type ChatPanelProps = {
   onSubmit: () => void;
   onNewConversation: () => void;
   onRequestLiveAgent: () => void;
-  onNotify: (message: string, kind?: Toast["kind"]) => void;
+  onNotify: (message: string, kind?: "error" | "success") => void;
   hasUploads: boolean;
 };
 
@@ -41,11 +54,6 @@ export function ChatPanel({
   onNotify,
   hasUploads,
 }: ChatPanelProps) {
-  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
-    onSubmit();
-  }
-
   const questionInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -57,149 +65,130 @@ export function ChatPanel({
     if (error) onNotify(error);
   }, [error, onNotify]);
 
+  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+    event.preventDefault();
+    onSubmit();
+  }
 
   return (
-    <section className="flex min-h-140 flex-col rounded-lg border border-(--line) bg-(--panel) p-5 shadow-[0_16px_40px_rgba(31,91,77,0.08)] backdrop-blur-sm sm:p-8">
-      <div className="mb-7 flex items-center justify-between border-b border-(--line) pb-5">
-        <div>
-          <p className="text-xs uppercase tracking-[0.16em] text-(--muted)">
-            02 / Ask your policy
-          </p>
-          <h2 className="mt-1 text-2xl">Conversation</h2>
-          {status === ChatStatus.ASKING && (
-            <p
-              className="mt-2 flex items-center gap-2 text-xs text-(--muted)"
-              role="status"
-              aria-live="polite"
-            >
-              <LoadingSpinner label="Generating answer" />
-              Generating answer...
-            </p>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={onNewConversation}
-          disabled={messages.length === 0}
-          className="cursor-pointer rounded-md border border-(--line) px-3 py-2 text-xs font-bold text-(--muted) transition hover:border-(--green) hover:text-(--green) disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          New conversation
-        </button>
-      </div>
-      <div className="min-h-0 max-h-140 flex-1 space-y-6 overflow-y-auto overscroll-contain pr-2 pb-6 [scrollbar-color:var(--green)_var(--mint)] scrollbar-thin">
-        {messages.length === 0 && (
-          <div className="flex h-full min-h-72 items-center justify-center text-center">
-            <p className="max-w-sm text-lg leading-8 text-(--muted)">
-              {hasUploads
-                ? "Your policies are indexed. Start with a question below."
-                : "Upload insurance policies to start a conversation."}
-            </p>
-          </div>
-        )}
-        {messages.map((message, index) => (
-          <div
-            key={`${message.role}-${index}`}
-            className={clsx({
-              "ml-8": message.role === "user",
-              "mr-8": message.role !== "user",
-            })}
+    <Paper withBorder radius="md" p={{ base: "md", sm: "xl" }} shadow="sm" h="100%">
+      <Stack h="100%" gap="md">
+        <Group justify="space-between" align="start">
+          <Box>
+            <Text size="xs" tt="uppercase" fw={700} c="dimmed" lts="1.5px">
+              02 / Ask your policy
+            </Text>
+            <Title order={2} size="h2" mt={4}>Conversation</Title>
+            {status === ChatStatus.ASKING && (
+              <Group gap="xs" mt="xs" role="status" aria-live="polite">
+                <Loader size="xs" />
+                <Text size="xs" c="dimmed">Generating answer...</Text>
+              </Group>
+            )}
+          </Box>
+          <Button
+            variant="subtle"
+            size="sm"
+            onClick={onNewConversation}
+            disabled={messages.length === 0}
           >
-            <p
-              className={clsx(
-                "mb-1 text-xs tracking-wider text-(--muted)",
-                message.role === "user" && "text-right",
-              )}
-            >
-              {message.role === "user" ? "You" : "PolicyChat"}
-            </p>
-            <div
-              className={clsx(
-                "rounded-lg p-4 shadow-sm",
-                message.role === "user"
-                  ? "bg-(--mint)"
-                  : "border border-(--line) bg-white/65 pl-5",
-              )}
-            >
-              <p className="whitespace-pre-wrap leading-7">{message.content}</p>
-              {message.citations && message.citations.length > 0 && (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {message.citations.map((citation) => (
-                    <span
-                      key={`${citation.fileId}-${citation.index ?? "x"}`}
-                      className="border border-(--line) px-2 py-1 text-xs text-(--muted)"
-                    >
-                      {citation.documentName ??
-                        citation.filename ??
-                        citation.fileId}
-                      {citation.filename &&
-                        citation.documentName &&
-                        ` · ${citation.filename}`}
-                    </span>
-                  ))}
-                </div>
-              )}
-              {message.needsHumanReview && (
-                <div className="mt-4 rounded-md border border-(--coral)/25 bg-[#fff8f4] p-4 text-sm">
-                  <p className="font-bold text-(--coral)">
-                    This answer needs human review.
-                  </p>
-                  <p className="mt-1 text-(--muted)">
-                    {message.reason === "blocked_term"
-                      ? "This request was stopped before it reached the policy assistant."
-                      : "I could not find enough evidence in the uploaded policies."}
-                  </p>
-                  {!liveAgentRequested ? (
-                    <button
-                      type="button"
-                      onClick={onRequestLiveAgent}
-                      className="mt-3 cursor-pointer rounded-md border border-(--coral) px-3 py-2 text-xs font-bold text-(--coral) transition hover:bg-(--coral) hover:text-white"
-                    >
-                      Loop to live agent
-                    </button>
-                  ) : (
-                    <p className="mt-3 font-bold text-(--green)">
-                      Live-agent handoff simulated. A human queue would receive
-                      this conversation.
-                    </p>
+            New conversation
+          </Button>
+        </Group>
+        <Divider />
+        <ScrollArea.Autosize mah={560} offsetScrollbars type="auto" flex={1}>
+          <Stack gap="lg" pr="sm">
+            {messages.length === 0 && (
+              <Box mih={288} style={{ display: "grid", placeItems: "center", textAlign: "center" }}>
+                <Text maw={380} size="lg" lh={1.6} c="dimmed">
+                  {hasUploads
+                    ? "Your policies are indexed. Start with a question below."
+                    : "Upload insurance policies to start a conversation."}
+                </Text>
+              </Box>
+            )}
+            {messages.map((message, index) => (
+              <Box
+                key={`${message.role}-${index}`}
+                ml={message.role === "user" ? "xl" : 0}
+                mr={message.role !== "user" ? "xl" : 0}
+              >
+                <Group justify={message.role === "user" ? "end" : "start"} gap="xs" mb={4}>
+                  {message.role === "assistant" && <IconRobot size={15} color="var(--mantine-color-teal-7)" />}
+                  <Text size="xs" c="dimmed">{message.role === "user" ? "You" : "PolicyChat"}</Text>
+                  {message.role === "user" && <IconUser size={15} color="var(--mantine-color-gray-6)" />}
+                </Group>
+                <Paper
+                  withBorder={message.role === "assistant"}
+                  bg={message.role === "user" ? "teal.0" : "gray.0"}
+                  p="md"
+                  radius="md"
+                >
+                  <Text style={{ whiteSpace: "pre-wrap" }} lh={1.7}>{message.content}</Text>
+                  {message.citations && message.citations.length > 0 && (
+                    <Group gap="xs" mt="md">
+                      {message.citations.map((citation) => (
+                        <Badge key={`${citation.fileId}-${citation.index ?? "x"}`} variant="outline" color="gray">
+                          {citation.documentName ?? citation.filename ?? citation.fileId}
+                          {citation.filename && citation.documentName && ` · ${citation.filename}`}
+                        </Badge>
+                      ))}
+                    </Group>
                   )}
-                </div>
+                  {message.needsHumanReview && (
+                    <Alert
+                      mt="md"
+                      color="orange"
+                      variant="light"
+                      icon={<IconAlertCircle size={18} />}
+                      title="This answer needs human review."
+                    >
+                      <Text size="sm">
+                        {message.reason === "blocked_term"
+                          ? "This request was stopped before it reached the policy assistant."
+                          : "I could not find enough evidence in the uploaded policies."}
+                      </Text>
+                      {!liveAgentRequested ? (
+                        <Button mt="sm" size="xs" color="orange" variant="outline" onClick={onRequestLiveAgent}>
+                          Loop to live agent
+                        </Button>
+                      ) : (
+                        <Text mt="sm" size="sm" fw={700} c="teal">
+                          Live-agent handoff simulated. A human queue would receive this conversation.
+                        </Text>
+                      )}
+                    </Alert>
+                  )}
+                </Paper>
+              </Box>
+            ))}
+            <div ref={chatEndRef} aria-hidden="true" />
+          </Stack>
+        </ScrollArea.Autosize>
+        <form onSubmit={handleSubmit}>
+          <Group wrap="nowrap" align="end">
+            <TextInput
+              flex={1}
+              ref={questionInputRef}
+              value={question}
+              onChange={(event) => onQuestionChange(event.currentTarget.value)}
+              disabled={!hasUploads || status === ChatStatus.ASKING}
+              aria-label="Ask a question about your policy"
+              placeholder={hasUploads ? "Ask about your policy..." : "Upload a policy first"}
+            />
+            <Button
+              type="submit"
+              disabled={!hasUploads || !question.trim() || status === ChatStatus.ASKING}
+            >
+              {status === ChatStatus.ASKING ? (
+                <Group gap="xs"><Loader size="xs" color="white" /> Thinking</Group>
+              ) : (
+                <Group gap="xs">Ask <IconArrowRight size={16} /></Group>
               )}
-            </div>
-          </div>
-        ))}
-        <div ref={chatEndRef} aria-hidden="true" />
-      </div>
-      <form
-        onSubmit={handleSubmit}
-        className="mt-3 flex gap-3 rounded-lg border-2 border-(--green)/35 bg-white px-3 py-2 shadow-[0_5px_0_var(--mint)] transition focus-within:border-(--green) focus-within:shadow-[0_5px_0_var(--green)]"
-      >
-        <input
-          ref={questionInputRef}
-          value={question}
-          onChange={(event) => onQuestionChange(event.target.value)}
-          disabled={!hasUploads || status === ChatStatus.ASKING}
-          aria-label="Ask a question about your policy"
-          placeholder={
-            hasUploads ? "Ask about your policy..." : "Upload a policy first"
-          }
-          className="min-w-0 flex-1 bg-transparent px-2 py-2 text-base outline-none placeholder:text-(--muted) disabled:cursor-not-allowed"
-        />
-        <button
-          disabled={
-            !hasUploads || !question.trim() || status === ChatStatus.ASKING
-          }
-          className="rounded-md bg-(--green) px-5 py-3 text-sm font-bold text-white transition hover:bg-(--green-dark) disabled:cursor-not-allowed disabled:opacity-35 cursor-pointer"
-        >
-          {status === ChatStatus.ASKING ? (
-            <span className="flex items-center gap-2">
-              <LoadingSpinner label="Sending question" />
-              Thinking
-            </span>
-          ) : (
-            "Ask"
-          )}
-        </button>
-      </form>
-    </section>
+            </Button>
+          </Group>
+        </form>
+      </Stack>
+    </Paper>
   );
 }

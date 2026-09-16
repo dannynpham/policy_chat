@@ -1,12 +1,23 @@
 "use client";
 
-import { useEffect, useState, type SubmitEvent } from "react";
-import clsx from "clsx";
+import { useEffect, useState } from "react";
+import {
+  ActionIcon,
+  Badge,
+  Button,
+  Divider,
+  FileButton,
+  Group,
+  Loader,
+  Paper,
+  Stack,
+  Text,
+  UnstyledButton,
+} from "@mantine/core";
+import { IconDownload, IconFileUpload, IconTrash } from "@tabler/icons-react";
+import { DocumentStatus } from "@/hooks/usePolicyDocuments";
 import { downloadPolicy } from "@/lib/api/documents";
 import type { PolicyDocument } from "@/lib/documents";
-import { DocumentStatus } from "@/hooks/usePolicyDocuments";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
-import type { Toast } from "@/components/ToastViewport";
 
 const SUGGESTIONS = [
   "What is the deductible?",
@@ -22,7 +33,7 @@ type PolicySidebarProps = {
   onUpload: (file: File) => void;
   onRemove: (document: PolicyDocument) => void;
   onReset: () => void;
-  onNotify: (message: string, kind?: Toast["kind"]) => void;
+  onNotify: (message: string, kind?: "error" | "success") => void;
   hasQuestion: boolean;
   onSuggestion: (suggestion: string) => void;
 };
@@ -52,21 +63,11 @@ export function PolicySidebar({
     if (downloadError) onNotify(downloadError);
   }, [downloadError, onNotify]);
 
-  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const input = event.currentTarget.elements.namedItem(
-      "document",
-    ) as HTMLInputElement;
-    const file = input.files?.[0];
-    if (file) onUpload(file);
-    event.currentTarget.reset();
-  }
-
-  async function handleDownload(document: PolicyDocument) {
+  async function handleDownload(policy: PolicyDocument) {
     setDownloadError("");
-    setDownloadingFileId(document.fileId);
+    setDownloadingFileId(policy.fileId);
     try {
-      await downloadPolicy(document);
+      await downloadPolicy(policy);
     } catch (downloadError) {
       setDownloadError(
         downloadError instanceof Error
@@ -79,133 +80,137 @@ export function PolicySidebar({
   }
 
   return (
-    <aside>
-      <div className="rounded-lg border border-(--line) bg-(--panel) p-6 shadow-[0_12px_32px_rgba(31,91,77,0.06)] backdrop-blur-sm">
-        <p className="mb-5 text-xs font-bold uppercase tracking-[0.16em] text-(--muted)">
-          01 / Upload a policy
-        </p>
-        <form onSubmit={handleSubmit}>
-          <label
-            className={clsx(
-              "flex min-h-44 flex-col items-center justify-center rounded-md border-2 border-dashed border-(--green)/35 bg-(--mint)/45 p-5 text-center transition",
-              {
-                "cursor-not-allowed opacity-60": isBusy,
-                "cursor-pointer hover:border-(--green) hover:bg-(--mint)":
-                  !isBusy,
-              },
-            )}
+    <Stack gap="lg">
+      <Paper withBorder radius="md" p="lg" shadow="sm">
+        <Stack gap="md">
+          <Text size="xs" fw={700} tt="uppercase" c="dimmed" lts="1.5px">
+            01 / Upload a policy
+          </Text>
+          <FileButton
+            onChange={(file) => file && onUpload(file)}
+            accept="application/pdf,.pdf"
+            disabled={isBusy}
           >
-            <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-white text-2xl text-(--green) shadow-sm">
-              ↑
-            </span>
-            <span className="font-bold">Choose a PDF</span>
-            <span className="mt-1 text-xs text-(--muted)">10 MB maximum</span>
-            <input
-              className="sr-only"
-              type="file"
-              name="document"
-              accept="application/pdf,.pdf"
-              disabled={isBusy}
-              onChange={(event) => event.currentTarget.form?.requestSubmit()}
-            />
-          </label>
-        </form>
+            {(props) => (
+              <Button
+                {...props}
+                variant="light"
+                size="lg"
+                leftSection={<IconFileUpload size={20} />}
+                fullWidth
+              >
+                Choose a PDF
+              </Button>
+            )}
+          </FileButton>
+          <Text size="xs" c="dimmed" ta="center">
+            PDF files up to 4 MB
+          </Text>
+        </Stack>
         {status === DocumentStatus.UPLOADING && (
-          <p className="mt-4 flex items-center gap-2 text-sm text-(--green)">
-            <LoadingSpinner label="Checking and indexing policy" />
-            Uploading, checking, and indexing policy...
-          </p>
+          <Group mt="md" gap="xs">
+            <Loader size="sm" />
+            <Text size="sm" c="teal">
+              Checking and indexing policy...
+            </Text>
+          </Group>
         )}
         {status === DocumentStatus.DELETING && (
-          <p className="mt-4 flex items-center gap-2 text-sm text-(--coral)">
-            <LoadingSpinner label="Removing policy" />
-            Removing policy...
-          </p>
+          <Group mt="md" gap="xs">
+            <Loader size="sm" color="red" />
+            <Text size="sm" c="red">
+              Removing policy...
+            </Text>
+          </Group>
         )}
         {status === DocumentStatus.CLEARING && (
-          <p className="mt-4 flex items-center gap-2 text-sm text-(--coral)">
-            <LoadingSpinner label="Removing all policies" />
-            Removing all policies...
-          </p>
+          <Group mt="md" gap="xs">
+            <Loader size="sm" color="red" />
+            <Text size="sm" c="red">
+              Removing all policies...
+            </Text>
+          </Group>
         )}
         {documents.length > 0 && (
-          <div className="mt-5 border-t border-(--line) pt-4">
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <p className="text-xs uppercase tracking-wider text-(--muted)">
+          <>
+            <Divider my="lg" />
+            <Group justify="space-between" mb="sm">
+              <Text size="xs" tt="uppercase" c="dimmed" lts="1px">
                 Included policies · {documents.length}
-              </p>
-              <button
-                type="button"
-                className={clsx(
-                  "text-xs font-bold text-(--coral) underline",
-                  "cursor-pointer disabled:cursor-not-allowed disabled:opacity-40",
-                )}
+              </Text>
+              <Button
+                variant="subtle"
+                color="red"
+                size="compact-xs"
                 onClick={onReset}
                 disabled={isBusy || downloadingFileId !== null}
               >
                 Clear all
-              </button>
-            </div>
-            <div className="space-y-2">
-              {documents.map((document) => (
-                <div
-                  key={document.id}
-                  className="flex items-center gap-2 rounded-md border border-(--line) bg-(--mint)/45 p-3 transition hover:border-(--green)/40 hover:bg-(--mint)/70"
-                >
-                  <p className="min-w-0 flex-1 truncate text-left text-sm font-bold">
-                    {document.name}
-                  </p>
-                  <span className="rounded-full bg-white px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-(--green)">
-                    Indexed
-                  </span>
-                  <button
-                    type="button"
-                    aria-label={`Download ${document.name}`}
-                    title={`Download ${document.name}`}
-                    className="px-1 text-(--green) cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
-                    onClick={() => handleDownload(document)}
-                    disabled={isBusy || downloadingFileId !== null}
-                  >
-                    ↓
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={`Remove ${document.name}`}
-                    className={clsx(
-                      "px-1 text-(--coral)",
-                      "cursor-pointer disabled:cursor-not-allowed disabled:opacity-40",
-                    )}
-                    onClick={() => onRemove(document)}
-                    disabled={isBusy || downloadingFileId !== null}
-                  >
-                    ×
-                  </button>
-                </div>
+              </Button>
+            </Group>
+            <Stack gap="xs">
+              {documents.map((policy) => (
+                <Paper key={policy.id} withBorder p="xs" radius="sm">
+                  <Group gap="xs" wrap="nowrap">
+                    <Text size="sm" fw={600} truncate flex={1}>
+                      {policy.name}
+                    </Text>
+                    <Badge size="xs" variant="light" color="teal">
+                      Indexed
+                    </Badge>
+                    <ActionIcon
+                      variant="subtle"
+                      color="teal"
+                      aria-label={`Download ${policy.name}`}
+                      title={`Download ${policy.name}`}
+                      onClick={() => handleDownload(policy)}
+                      disabled={isBusy || downloadingFileId !== null}
+                    >
+                      <IconDownload size={16} />
+                    </ActionIcon>
+                    <ActionIcon
+                      variant="subtle"
+                      color="red"
+                      aria-label={`Remove ${policy.name}`}
+                      onClick={() => onRemove(policy)}
+                      disabled={isBusy || downloadingFileId !== null}
+                    >
+                      <IconTrash size={16} />
+                    </ActionIcon>
+                  </Group>
+                </Paper>
               ))}
-            </div>
-            <p className="mt-3 text-xs text-(--green)">
+            </Stack>
+            <Text mt="sm" size="xs" c="teal">
               All uploaded policies are included in answers.
-            </p>
-          </div>
+            </Text>
+          </>
         )}
-      </div>
-      <div className="mt-8">
-        <p className="mb-4 text-xs font-bold uppercase tracking-[0.16em] text-(--muted)">
+      </Paper>
+      <Stack gap="xs">
+        <Text size="xs" fw={700} tt="uppercase" c="dimmed" lts="1.5px">
           Try asking
-        </p>
-        <div className="space-y-2">
-          {SUGGESTIONS.map((suggestion) => (
-            <button
-              key={suggestion}
-              disabled={!hasQuestion}
-              onClick={() => onSuggestion(suggestion)}
-              className="block w-full cursor-pointer rounded-md border border-transparent px-3 py-2.5 text-left text-sm transition hover:border-(--line) hover:bg-white/70 hover:text-(--green) disabled:cursor-not-allowed disabled:opacity-40"
+        </Text>
+        {SUGGESTIONS.map((suggestion) => (
+          <UnstyledButton
+            key={suggestion}
+            disabled={!hasQuestion}
+            onClick={() => onSuggestion(suggestion)}
+          >
+            <Group
+              justify="space-between"
+              px="sm"
+              py="xs"
+              style={{ borderRadius: "var(--mantine-radius-sm)" }}
             >
-              {suggestion} <span className="float-right">↗</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    </aside>
+              <Text size="sm" c={hasQuestion ? "dark" : "dimmed"}>
+                {suggestion}
+              </Text>
+              <Text c="teal">↗</Text>
+            </Group>
+          </UnstyledButton>
+        ))}
+      </Stack>
+    </Stack>
   );
 }

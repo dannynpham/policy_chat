@@ -1,73 +1,76 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { Container, Grid, Group, Stack, Text, Title } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+import { useCallback } from "react";
 import { ChatPanel } from "@/components/ChatPanel";
 import { PolicySidebar } from "@/components/PolicySidebar";
-import { ToastViewport, type Toast } from "@/components/ToastViewport";
 import { ChatStatus, usePolicyChat } from "@/hooks/usePolicyChat";
 import { usePolicyDocuments } from "@/hooks/usePolicyDocuments";
 
 export default function Home() {
-  const [toasts, setToasts] = useState<Toast[]>([]);
   const chat = usePolicyChat();
   const documents = usePolicyDocuments(chat.resetConversation);
   const hasUploads = documents.documents.length > 0;
-  const notify = useCallback((message: string, kind: Toast["kind"] = "error") => {
-    setToasts((current) => [
-      ...current.slice(-2),
-      { id: Date.now() + Math.random(), message, kind },
-    ]);
-  }, []);
+  const notify = useCallback(
+    (message: string, kind: "error" | "success" = "error") => {
+      notifications.show({
+        message,
+        color: kind === "error" ? "red" : "teal",
+      });
+    },
+    [],
+  );
 
   return (
-    <main className="min-h-screen px-5 py-8 sm:px-10 lg:px-20 lg:py-12">
-      <ToastViewport
-        toasts={toasts}
-        onDismiss={(id) =>
-          setToasts((current) => current.filter((toast) => toast.id !== id))
-        }
-      />
-      <div className="mx-auto max-w-6xl">
-        <header className="mb-10 flex items-end justify-between gap-6 border-b border-(--line) pb-7">
-          <div>
-            <h1 className="text-5xl leading-none tracking-tight sm:text-7xl">
-              Policy<span className="text-(--green)">Chat</span>
-            </h1>
-          </div>
-          <p className="hidden max-w-xs text-right text-sm leading-6 text-(--muted) sm:block">
+    <Container size="xl" py={{ base: "xl", lg: 48 }}>
+      <Stack gap="xl">
+        <Group
+          justify="space-between"
+          align="end"
+          pb="lg"
+          style={{ borderBottom: "1px solid var(--mantine-color-gray-3)" }}
+        >
+          <Title order={1} size="clamp(2.75rem, 8vw, 5rem)" lh={1}>
+            Policy
+            <span style={{ color: "var(--mantine-color-teal-8)" }}>Chat</span>
+          </Title>
+          <Text c="dimmed" ta="right" maw={280} visibleFrom="sm">
             Ask plain-language questions. Get answers about your policies.
-          </p>
-        </header>
-        <div className="grid gap-10 lg:grid-cols-[minmax(260px,0.7fr)_1.3fr]">
-          <PolicySidebar
-            documents={documents.documents}
-            status={documents.status}
-            error={documents.error}
-            onUpload={documents.uploadDocument}
-            onRemove={documents.removeDocument}
-            onReset={documents.resetSession}
-            onNotify={notify}
-            hasQuestion={hasUploads && chat.status !== ChatStatus.ASKING}
-            onSuggestion={chat.setQuestion}
-          />
-          <ChatPanel
-            messages={chat.messages}
-            question={chat.question}
-            status={chat.status}
-            error={chat.error}
-            liveAgentRequested={chat.liveAgentRequested}
-            chatEndRef={chat.chatEndRef}
-            onQuestionChange={chat.setQuestion}
-            onSubmit={() =>
-              chat.submitQuestion(documents.documents)
-            }
-            onNewConversation={chat.resetConversation}
-            onRequestLiveAgent={chat.requestLiveAgent}
-            onNotify={notify}
-            hasUploads={hasUploads}
-          />
-        </div>
-      </div>
-    </main>
+          </Text>
+        </Group>
+        <Grid gap="xl">
+          <Grid.Col span={{ base: 12, lg: 4 }}>
+            <PolicySidebar
+              documents={documents.documents}
+              status={documents.status}
+              error={documents.error}
+              onUpload={documents.uploadDocument}
+              onRemove={documents.removeDocument}
+              onReset={documents.resetSession}
+              onNotify={notify}
+              hasQuestion={hasUploads && chat.status !== ChatStatus.ASKING}
+              onSuggestion={chat.setQuestion}
+            />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, lg: 8 }}>
+            <ChatPanel
+              messages={chat.messages}
+              question={chat.question}
+              status={chat.status}
+              error={chat.error}
+              liveAgentRequested={chat.liveAgentRequested}
+              chatEndRef={chat.chatEndRef}
+              onQuestionChange={chat.setQuestion}
+              onSubmit={() => chat.submitQuestion(documents.documents)}
+              onNewConversation={chat.resetConversation}
+              onRequestLiveAgent={chat.requestLiveAgent}
+              onNotify={notify}
+              hasUploads={hasUploads}
+            />
+          </Grid.Col>
+        </Grid>
+      </Stack>
+    </Container>
   );
 }
